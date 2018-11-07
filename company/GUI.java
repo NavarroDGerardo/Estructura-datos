@@ -1,6 +1,7 @@
 package com.company;
 import com.sun.scenario.effect.impl.sw.java.JSWBlend_COLOR_BURNPeer;
 import sun.java2d.loops.ProcessPath;
+import sun.management.HotspotClassLoadingMBean;
 
 import javax.swing.*;
 import java.awt.*;
@@ -31,9 +32,15 @@ public class GUI extends JFrame{
     private JButton bSalidaNorte, bSalidaSur, bSalidaEste, bSalidaOeste;
     private JLabel lNorte, lSur, lEste, lOeste, lOpciones;
 
+    //Variables panel contador de carros  entrada
+    private JPanel panelContador;
+    private JTextField contadorAutosEntradaySalida;
+
     //Variables NuevosPaneles
     private JPanel pBaseDatos, pDatosApp;
-    private JLabel lbaseDatos;
+    private JTextField hMayorEntrada, hMayorSalida, aEntradaMasOcupada, aSalidaMasOcupada;
+    //TODO Agregar funcionalida a los JTextFields que estan aquí arriba
+    //TODO ir a cenar porque tengo hambre
 
     //Variables botonesRegresar
     private JButton bRegresarRegistroN, bRegresarRegistroS;
@@ -45,6 +52,7 @@ public class GUI extends JFrame{
     protected long id = 1, carrosSalieron = 0;
     protected Entrada[] arregloEntrada;
     protected Salida[] arregloSalida;
+    protected DoubleLinkedList<Auto> eNorte, eSur, eEste, eOeste, sNorte, sSur, sEste, sOeste;
 
     //Constructor
     public GUI(){
@@ -53,6 +61,14 @@ public class GUI extends JFrame{
         colaCarros = new Queue<Auto>();
         arregloEntrada = new Entrada[4];
         arregloSalida = new Salida[4];
+        eNorte = new DoubleLinkedList<Auto>();
+        eSur = new DoubleLinkedList<Auto>();
+        eEste = new DoubleLinkedList<Auto>();
+        eOeste = new DoubleLinkedList<Auto>();
+        sNorte = new DoubleLinkedList<Auto>();
+        sSur = new DoubleLinkedList<Auto>();
+        sEste = new DoubleLinkedList<Auto>();
+        sOeste = new DoubleLinkedList<Auto>();
         llenarArreglos();
         initComponents();
     }
@@ -76,10 +92,10 @@ public class GUI extends JFrame{
             bAvanzar15min.addActionListener(new BQuinceListener());
             bAvanzar5min.addActionListener(new BCincoListener());
         //Variables label
-        lNumAutos = new JLabel("Número de autos");
+        lNumAutos = new JLabel("Número de autos que entraron");
         lAutosEntrada = new JLabel("Numero de autos que entraron");
         lAutosSalida = new JLabel("Numero de autos que salieron");
-        lAutosActuales = new JLabel("Numeor de acuros circulando");
+        lAutosActuales = new JLabel("Numero de autos circulando");
         lHora = new JLabel("Hora:");
         lDia = new JLabel("Fecha:");
         //Variable TextField
@@ -110,7 +126,16 @@ public class GUI extends JFrame{
         pBaseDatos = new JPanel();
         pBaseDatos.setLayout(new GridLayout(2,1));
         pDatosApp = new JPanel();
-        pDatosApp.setLayout(new FlowLayout());
+        pDatosApp.setLayout(new GridLayout(4,2));
+        hMayorEntrada = new JTextField();
+        hMayorSalida = new JTextField();
+        aEntradaMasOcupada = new JTextField();
+        aSalidaMasOcupada = new JTextField();
+        //Negar permisos de textArea
+        hMayorEntrada.setEditable(false);
+        hMayorSalida.setEditable(false);
+        aEntradaMasOcupada.setEditable(false);
+        aSalidaMasOcupada.setEditable(false);
 
         //Variables AppGeneral
         pContenedorApp = new JPanel();
@@ -163,22 +188,28 @@ public class GUI extends JFrame{
         //Especificaciones de la GUI
         setTitle("Proyecto Final");
         setVisible(true);
-        setSize(1100, 600);
+        setSize(1600, 700);
         setResizable(false);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         pContenedor.setLayout(new GridLayout(2,3));
-        pDatos.setLayout(new GridLayout(6,3));
+        pDatos.setLayout(new GridLayout(5,3));
         pMapa.setLayout(new GridLayout(1,1));
         pAppUsuario.setLayout(new GridLayout(2,1));
         pBotones.setLayout(new GridLayout(4,1));
+
+        //Panel COntador de entrada y salida de autos
+        panelContador = new JPanel();
+        panelContador.setLayout(new GridLayout(2,2));
+        contadorAutosEntradaySalida = new JTextField("0");
+        contadorAutosEntradaySalida.setEditable(false);
 
         //Creación de la pDatos
         pDatos.add(lNumAutos);
         pDatos.add(new JLabel(""));
         pDatos.add(fNumeroAutos);
-        pDatos.add(lAutosEntrada);
+        /*pDatos.add(lAutosEntrada);
         pDatos.add(new JLabel(""));
-        pDatos.add(fAutosEntrada);
+        pDatos.add(fAutosEntrada);*/
         pDatos.add(lAutosSalida);
         pDatos.add(new JLabel(""));
         pDatos.add(fAutosSalida);
@@ -236,9 +267,23 @@ public class GUI extends JFrame{
         pBotones.add(bAvanzar15min);
         pBotones.add(bAvanzar5min);
 
-        pBaseDatos.add(lIdAutos);
+        panelContador.add(lIdAutos);
+        panelContador.add(new JLabel(""));
+        panelContador.add(new JLabel("Numero de Autos:"));
+        panelContador.add(contadorAutosEntradaySalida);
+
+        pBaseDatos.add(panelContador);
         panelId.add(scroll);
         pBaseDatos.add(panelId);
+
+        pDatosApp.add(new JLabel("Hora con más entradas:"));
+        pDatosApp.add(hMayorEntrada);
+        pDatosApp.add(new JLabel("Hora con más salida"));
+        pDatosApp.add(hMayorSalida);
+        pDatosApp.add(new JLabel("Entrada con mayor # carros"));
+        pDatosApp.add(aEntradaMasOcupada);
+        pDatosApp.add(new JLabel("Salida con mayor # carros"));
+        pDatosApp.add(aSalidaMasOcupada);
 
         pContenedor.add(pDatos);
         pContenedor.add(pBotones);
@@ -257,7 +302,7 @@ public class GUI extends JFrame{
             verificarTiempo();
             int nRandom = (int)(Math.random()*59);
             salidaCarros();
-            crearCarrros(nRandom);
+            crearCarros(nRandom);
             autosCirculando();
         }
     }
@@ -268,7 +313,7 @@ public class GUI extends JFrame{
             verificarTiempo();
             int nRandom = (int)(Math.random()*30);
             salidaCarros();
-            crearCarrros(nRandom);
+            crearCarros(nRandom);
             autosCirculando();
         }
     }
@@ -279,7 +324,7 @@ public class GUI extends JFrame{
             verificarTiempo();
             int nRandom = (int)(Math.random()*15);
             salidaCarros();
-            crearCarrros(nRandom);
+            crearCarros(nRandom);
             autosCirculando();
         }
     }
@@ -290,7 +335,7 @@ public class GUI extends JFrame{
             verificarTiempo();
             int nRandom = (int)(Math.random()*5);
             salidaCarros();
-            crearCarrros(nRandom);
+            crearCarros(nRandom);
             autosCirculando();
         }
     }
@@ -312,24 +357,35 @@ public class GUI extends JFrame{
         fDia.setText(fecha.toString());
     }
 
-    public void crearCarrros(int nRandom){
-        for(int i=0; i<=nRandom + 1; i++){
+    public void crearCarros(int nRandom){
+        Hora horaSalida = new Hora();
+        Calendario fechaSalida = new Calendario(0,0,0);
+        int h = reloj.getHora();
+        int m = reloj.getMinutos();
+        Hora horaEntrada = new Hora(h, m);
+        for(int i=0; i<nRandom; i++){
             int entradaRandom = (int)(Math.random()*4);
-            //TODO cambiar id por un hash
-            Auto a = new Auto(id, reloj, fecha, true, arregloEntrada[entradaRandom].getNombre(), "");
+            Auto a = new Auto(id, horaEntrada, fecha, true, arregloEntrada[entradaRandom].getNombre(), horaSalida,
+                        fechaSalida, "");
             NodoD<Auto> nNodoD = new NodoD<Auto>(a, null, null);
+            switch (entradaRandom){
+                case 0:
+                    eNorte.addFirst(nNodoD);
+                    break;
+                case 1:
+                    eSur.addFirst(nNodoD);
+                    break;
+                case 2:
+                    eEste.addFirst(nNodoD);
+                    break;
+                case 3:
+                    eOeste.addFirst(nNodoD);
+                    break;
+            }
             colaCarros.add(nNodoD);
             id++;
         }
         fNumeroAutos.setText(String.valueOf(id-1));
-        //Imprimir en textArea la base de datos de los autos que se encuentran en la cola
-        NodoD<Auto> cabeza = colaCarros.getFirst();
-        aIDAutos.setText("");
-        do{
-            aIDAutos.setText(aIDAutos.getText() + cabeza.getElement().toString());
-            cabeza = cabeza.getNext();
-        }while(cabeza != colaCarros.getLast());
-        aIDAutos.setText(aIDAutos.getText() + colaCarros.getLast().getElement().toString());
     }
 
     public void salidaCarros(){
@@ -390,10 +446,15 @@ public class GUI extends JFrame{
 
     public void registrarSalida(NodoD<Auto> cabeza){
         int salidaRandom = (int)(Math.random() * 4);
-        if(cabeza.getElement().getEntra().equals(arregloSalida[salidaRandom])){
+        if(cabeza.getElement().getEntra().equals(arregloSalida[salidaRandom].getNombre())){
             registrarSalida(cabeza);
         }else{
             cabeza.getElement().setSale(arregloSalida[salidaRandom].getNombre());
+            int h = reloj.getHora();
+            int m = reloj.getMinutos();
+            Hora hSalida = new Hora(h, m);
+            cabeza.getElement().setHoraSalida(hSalida);
+            cabeza.getElement().setFechaSalida(fecha);
         }
     }
 
@@ -454,10 +515,12 @@ public class GUI extends JFrame{
             repaint();
         }
     }
+    //TODO repartir en diferentes LinkedList las entradas y salidas
     public class BEntrdaNorteListener implements ActionListener{
         public void actionPerformed(ActionEvent e){
             lIdAutos.setText("Entrada Norte");
             NodoD<Auto> cabeza = colaCarros.getFirst();
+            contadorAutosEntradaySalida.setText(String.valueOf(eNorte.getSize()));
             aIDAutos.setText("");
             do{
                 if(cabeza.getElement().getEntra().equals("Norte")){

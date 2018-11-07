@@ -1,18 +1,21 @@
 package com.company;
 public class Auto {
     protected long id;
-    protected Hora hora;
-    protected Calendario fecha;
+    protected Hora horaEntrada, horaSalida;
+    protected Calendario fechaEntrada, fechaSalida;
     protected boolean dentro;
     protected String entra;
     protected String sale;
 
-    public Auto(long id, Hora hora, Calendario fecha, boolean dentro, String entra, String sale){
-        this.hora = hora;
+    public Auto(long id, Hora horaEntrada, Calendario fechaEntrada, boolean dentro, String entra,
+                Hora horaSalida, Calendario fechaSalida, String sale){
+        this.horaEntrada = horaEntrada;
         this.id = id;
-        this.fecha = fecha;
+        this.fechaEntrada = fechaEntrada;
         this.dentro = dentro;
         this.entra = entra;
+        this.horaSalida = horaSalida;
+        this.fechaSalida = fechaSalida;
         this.sale = sale;
     }
 
@@ -24,12 +27,12 @@ public class Auto {
         this.id = id;
     }
 
-    public Hora getHora() {
-        return hora;
+    public Hora getHoraEntrada() {
+        return horaEntrada;
     }
 
-    public void setHora(Hora hora) {
-        this.hora = hora;
+    public void setHoraEntrada(Hora horaEntrada) {
+        this.horaEntrada = horaEntrada;
     }
 
     public boolean isDentro() {
@@ -56,17 +59,53 @@ public class Auto {
         this.sale = sale;
     }
 
-    public Calendario getFecha() {
-        return fecha;
+    public Calendario getFechaEntrada() {
+        return fechaEntrada;
     }
 
-    public void setFecha(Calendario fecha) {
-        this.fecha = fecha;
+    public void setFechaEntrada(Calendario fechaEntrada) {
+        this.fechaEntrada = fechaEntrada;
+    }
+
+    public Hora getHoraSalida() {
+        return horaSalida;
+    }
+
+    public void setHoraSalida(Hora horaSalida) {
+        this.horaSalida = horaSalida;
+    }
+
+    public Calendario getFechaSalida() {
+        return fechaSalida;
+    }
+
+    public void setFechaSalida(Calendario fechaSalida) {
+        this.fechaSalida = fechaSalida;
+    }
+
+    public Hora duracionRecorrido(){
+        Hora duracion = new Hora(0,0);
+        if(horaEntrada.getHora() < horaSalida.getHora()){
+            int minutosFaltantes = 60 - horaEntrada.getMinutos();
+            minutosFaltantes += horaSalida.getMinutos();
+            int horasFaltantes = horaSalida.getHora() - (horaEntrada.getHora() + 1);
+            duracion.setHora(horasFaltantes);
+            duracion.setMinutos(minutosFaltantes);
+        }else if(horaEntrada.getHora() == horaSalida.getHora()){
+            if(horaEntrada.getMinutos() < horaSalida.getMinutos()){
+                int minutosFaltantes = horaSalida.getMinutos() - horaEntrada.getMinutos();
+                duracion.setMinutos(minutosFaltantes);
+            }
+        }
+        return duracion;
     }
 
     @Override
     public String toString(){
-        return "ID: " + String.valueOf(id) + "\n" + "Hora de Entrada: " + hora.toString() + " Fecha de Entrada: "
-                + fecha.toString() + "\n" + "Entrada: " + entra + "\n" + "Salida: " + sale + "\n";
+        return "ID: " + String.valueOf(id)
+                + "\n" + "Hora de Entrada: " + horaEntrada.toString() + " Fecha de Entrada: " + fechaEntrada.toString()
+                + "\n" + "Hora de salida: " + horaSalida.toString() + " Fecha de salida: " + fechaSalida.toString()
+                + "\n" + "Entrada: " + entra + "\n" + "Salida: " + sale
+                + "\n" + "Duracion recorrido: " + duracionRecorrido().toString() + "\n\n";
     }
 }

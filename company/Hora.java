@@ -8,6 +8,11 @@ public class Hora {
         minutos = 00;
     }
 
+    public Hora(int hora, int minutos){
+        this.hora = hora;
+        this.minutos = minutos;
+    }
+
 
     public int getHora() {
         return hora;
@@ -27,6 +32,6 @@ public class Hora {
 
     @Override
     public String toString(){
-        return String.valueOf(hora) + " : " + String.valueOf(minutos);
+        return String.valueOf(hora) + ":" + String.valueOf(minutos);
     }
 }

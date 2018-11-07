@@ -8,6 +8,12 @@ public class Calendario {
         año = 2018;
     }
 
+    public Calendario(int Dia, int Mes, int año){
+        this.Dia = Dia;
+        this.Mes = Mes;
+        this.año = año;
+    }
+
     public int getDia() {
         return Dia;
     }
