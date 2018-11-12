@@ -53,6 +53,22 @@ public class GUI extends JFrame{
     protected Entrada[] arregloEntrada;
     protected Salida[] arregloSalida;
     protected DoubleLinkedList<Auto> eNorte, eSur, eEste, eOeste, sNorte, sSur, sEste, sOeste;
+    protected Hora hMasEntradas, hMasSalidas;
+    protected Calendario fechaMasEntradas, fechaMasSalidas;
+    protected long lAutosAcumulados, lAutosAnteriores = 0, lAutosMaximos = 0;
+    protected long lAutosSalidaA, lAutosSalidasAnteriores = 0, lAutosSalidasMaxima = 0;
+
+    //Definir arreglos
+    //Entrada
+    Entrada entradaNorte = new Entrada("Norte", 0);
+    Entrada entradaSur = new Entrada("Sur", 0);
+    Entrada entradaEste = new Entrada("Este", 0);
+    Entrada entradaOeste = new Entrada("Oeste", 0);
+    //Salida
+    Salida salidaNorte = new Salida("Norte", 0);
+    Salida salidaSur = new Salida("Sur", 0);
+    Salida salidaEste = new Salida("Este", 0);
+    Salida salidaOeste = new Salida("Oeste", 0);
 
     //Constructor
     public GUI(){
@@ -69,6 +85,8 @@ public class GUI extends JFrame{
         sSur = new DoubleLinkedList<Auto>();
         sEste = new DoubleLinkedList<Auto>();
         sOeste = new DoubleLinkedList<Auto>();
+        hMasEntradas = new Hora();
+        hMasSalidas = new Hora();
         llenarArreglos();
         initComponents();
     }
@@ -304,6 +322,10 @@ public class GUI extends JFrame{
             salidaCarros();
             crearCarros(nRandom);
             autosCirculando();
+            setEntradaySalidaMasOcupada();
+            if(reloj.getMinutos() == 0){
+                VerificarHoraConMasSalidasYEntradas();
+            }
         }
     }
 
@@ -315,6 +337,10 @@ public class GUI extends JFrame{
             salidaCarros();
             crearCarros(nRandom);
             autosCirculando();
+            setEntradaySalidaMasOcupada();
+            if(reloj.getMinutos() == 0){
+                VerificarHoraConMasSalidasYEntradas();
+            }
         }
     }
 
@@ -326,6 +352,10 @@ public class GUI extends JFrame{
             salidaCarros();
             crearCarros(nRandom);
             autosCirculando();
+            setEntradaySalidaMasOcupada();
+            if(reloj.getMinutos() == 0){
+                VerificarHoraConMasSalidasYEntradas();
+            }
         }
     }
 
@@ -337,6 +367,10 @@ public class GUI extends JFrame{
             salidaCarros();
             crearCarros(nRandom);
             autosCirculando();
+            setEntradaySalidaMasOcupada();
+            if(reloj.getMinutos() == 0){
+                VerificarHoraConMasSalidasYEntradas();
+            }
         }
     }
 
@@ -357,6 +391,22 @@ public class GUI extends JFrame{
         fDia.setText(fecha.toString());
     }
 
+    public void VerificarHoraConMasSalidasYEntradas(){
+        lAutosAcumulados = colaCarros.getSize() - lAutosAnteriores;
+        lAutosAnteriores = colaCarros.getSize();
+        if(lAutosAcumulados >= lAutosMaximos){
+            lAutosMaximos = lAutosAcumulados;
+            hMayorEntrada.setText(reloj.toString());
+        }
+
+        lAutosSalidaA = carrosSalieron - lAutosSalidasAnteriores;
+        lAutosSalidasAnteriores = carrosSalieron;
+        if(lAutosSalidaA >= lAutosSalidasMaxima){
+            lAutosSalidasMaxima = lAutosSalidaA;
+            hMayorSalida.setText(reloj.toString());
+        }
+    }
+
     public void crearCarros(int nRandom){
         Hora horaSalida = new Hora();
         Calendario fechaSalida = new Calendario(0,0,0);
@@ -371,15 +421,19 @@ public class GUI extends JFrame{
             switch (entradaRandom){
                 case 0:
                     eNorte.addFirst(nNodoD);
+                    entradaNorte.setlNumeroDeAutos(entradaNorte.getlNumeroDeAutos() + 1);
                     break;
                 case 1:
                     eSur.addFirst(nNodoD);
+                    entradaSur.setlNumeroDeAutos(entradaSur.getlNumeroDeAutos() + 1);
                     break;
                 case 2:
                     eEste.addFirst(nNodoD);
+                    entradaEste.setlNumeroDeAutos(entradaEste.getlNumeroDeAutos() + 1);
                     break;
                 case 3:
                     eOeste.addFirst(nNodoD);
+                    entradaOeste.setlNumeroDeAutos(entradaOeste.getlNumeroDeAutos() + 1);
                     break;
             }
             colaCarros.add(nNodoD);
@@ -389,73 +443,83 @@ public class GUI extends JFrame{
     }
 
     public void salidaCarros(){
-        NodoD<Auto> cabeza = colaCarros.getFirst();
-        if(cabeza != null){
-            do{
+        NodoD<Auto> head = colaCarros.getFirst();
+        if(head != null){
+            for(int i=0; i<colaCarros.getSize(); i++){
+                //System.out.println("head = " + head.getElement().getId());
                 int nRandom = (int)(Math.random() * 100);
-                if(nRandom >= 90){
-                    cabeza.getElement().setDentro(false);
-                    registrarSalida(cabeza);
+                if(nRandom < 10 && head.getElement().isDentro() == true){
+                    head.getElement().setDentro(false);
+                    registrarSalida(head);
                     carrosSalieron++;
                 }
-                cabeza = cabeza.getNext();
-            }while(cabeza != colaCarros.getLast());
-            int nRandom = (int)(Math.random() * 100);
-            if(nRandom >= 90){
-                colaCarros.getLast().getElement().setDentro(false);
-                carrosSalieron++;
+                head = head.getNext();
             }
-            fAutosSalida.setText(String.valueOf(carrosSalieron));
         }
+        fAutosSalida.setText(String.valueOf(carrosSalieron));
     }
 
     public void autosCirculando(){
         NodoD<Auto> cabeza = colaCarros.getFirst();
         int aCirculando = 0;
-        do{
-            if(cabeza.getElement().isDentro() == true){
+        if(cabeza != null){
+            do{
+                if(cabeza.getElement().isDentro() == true){
+                    aCirculando++;
+                }
+                cabeza = cabeza.getNext();
+            }while(cabeza != colaCarros.getLast());
+            if(colaCarros.getLast().getElement().isDentro() == true){
                 aCirculando++;
             }
-            cabeza = cabeza.getNext();
-        }while(cabeza != colaCarros.getLast());
-        if(colaCarros.getLast().getElement().isDentro() == true){
-            aCirculando++;
         }
         fAutosActuales.setText(String.valueOf(aCirculando));
 
     }
 
     public void llenarArreglos(){
-        Entrada eNorte = new Entrada("Norte", 0);
-        Entrada eSur = new Entrada("Sur", 0);
-        Entrada eEste = new Entrada("Este", 0);
-        Entrada eOeste = new Entrada("Oeste", 0);
-        arregloEntrada[0] = eNorte;
-        arregloEntrada[1] = eSur;
-        arregloEntrada[2] = eEste;
-        arregloEntrada[3] = eOeste;
-        Salida sNorte = new Salida("Norte", 0);
-        Salida sSur = new Salida("Sur", 0);
-        Salida sEste = new Salida("Este", 0);
-        Salida sOeste = new Salida("Oeste", 0);
-        arregloSalida[0] = sNorte;
-        arregloSalida[1] = sSur;
-        arregloSalida[2] = sEste;
-        arregloSalida[3] = sOeste;
+        //Entrada
+        arregloEntrada[0] = entradaNorte;
+        arregloEntrada[1] = entradaSur;
+        arregloEntrada[2] = entradaEste;
+        arregloEntrada[3] = entradaOeste;
+        //Salida
+        arregloSalida[0] = salidaNorte;
+        arregloSalida[1] = salidaSur;
+        arregloSalida[2] = salidaEste;
+        arregloSalida[3] = salidaOeste;
     }
 
     public void registrarSalida(NodoD<Auto> cabeza){
-        int salidaRandom = (int)(Math.random() * 4);
-        if(cabeza.getElement().getEntra().equals(arregloSalida[salidaRandom].getNombre())){
-            registrarSalida(cabeza);
-        }else{
-            cabeza.getElement().setSale(arregloSalida[salidaRandom].getNombre());
-            int h = reloj.getHora();
-            int m = reloj.getMinutos();
-            Hora hSalida = new Hora(h, m);
-            cabeza.getElement().setHoraSalida(hSalida);
-            cabeza.getElement().setFechaSalida(fecha);
+        int salidaRandom = 0;
+        do{
+            salidaRandom = (int)(Math.random() * 4);
+        }while(cabeza.getElement().getEntra().equals(arregloSalida[salidaRandom].getNombre()));
+        arregloSalida[salidaRandom].setlNumeroDeAutos(arregloSalida[salidaRandom].getlNumeroDeAutos() + 1);
+        cabeza.getElement().setSale(arregloSalida[salidaRandom].getNombre());
+        int h = reloj.getHora();
+        int m = reloj.getMinutos();
+        Hora hSalida = new Hora(h, m);
+        cabeza.getElement().setHoraSalida(hSalida);
+        cabeza.getElement().setFechaSalida(fecha);
+    }
+
+    public void setEntradaySalidaMasOcupada(){
+        Entrada max = arregloEntrada[0];
+        for(int i=1; i<arregloEntrada.length-1; i++){
+            if(max.getlNumeroDeAutos() < arregloEntrada[i].getlNumeroDeAutos()){
+                max = arregloEntrada[i];
+            }
         }
+        aEntradaMasOcupada.setText(max.getNombre());
+        Salida sMax = arregloSalida[0];
+        for(int i=1; i<arregloSalida.length-1; i++){
+            if(max.getlNumeroDeAutos() < arregloSalida[i].getlNumeroDeAutos()){
+                sMax = arregloSalida[i];
+            }
+        }
+        aSalidaMasOcupada.setText(sMax.getNombre());
+
     }
 
     public class BRegistroEntradaListener implements ActionListener{
@@ -485,6 +549,7 @@ public class GUI extends JFrame{
     public class BBaseDatosListener implements ActionListener{
         public void actionPerformed(ActionEvent e){
             lIdAutos.setText("Base de Datos");
+            contadorAutosEntradaySalida.setText(String.valueOf(colaCarros.getSize()));
             NodoD<Auto> cabeza = colaCarros.getFirst();
             aIDAutos.setText("");
             do{
@@ -519,6 +584,7 @@ public class GUI extends JFrame{
     public class BEntrdaNorteListener implements ActionListener{
         public void actionPerformed(ActionEvent e){
             lIdAutos.setText("Entrada Norte");
+            contadorAutosEntradaySalida.setText(String.valueOf(entradaNorte.getlNumeroDeAutos()));
             NodoD<Auto> cabeza = colaCarros.getFirst();
             contadorAutosEntradaySalida.setText(String.valueOf(eNorte.getSize()));
             aIDAutos.setText("");
@@ -536,6 +602,7 @@ public class GUI extends JFrame{
     public class BEntradaSurListener implements ActionListener{
         public void actionPerformed(ActionEvent e){
             lIdAutos.setText("Entrada Sur");
+            contadorAutosEntradaySalida.setText(String.valueOf(entradaSur.getlNumeroDeAutos()));
             NodoD<Auto> cabeza = colaCarros.getFirst();
             aIDAutos.setText("");
             do{
@@ -552,6 +619,7 @@ public class GUI extends JFrame{
     public class BEntrdaEsteLsitener implements ActionListener{
         public void actionPerformed(ActionEvent e){
             lIdAutos.setText("Entrada Este");
+            contadorAutosEntradaySalida.setText(String.valueOf(entradaEste.getlNumeroDeAutos()));
             NodoD<Auto> cabeza = colaCarros.getFirst();
             aIDAutos.setText("");
             do{
@@ -568,6 +636,7 @@ public class GUI extends JFrame{
     public class BEntradaOesteListener implements ActionListener{
         public void actionPerformed(ActionEvent e){
             lIdAutos.setText("Entrada Oeste");
+            contadorAutosEntradaySalida.setText(String.valueOf(entradaOeste.getlNumeroDeAutos()));
             NodoD<Auto> cabeza = colaCarros.getFirst();
             aIDAutos.setText("");
             do{
@@ -584,6 +653,7 @@ public class GUI extends JFrame{
     public class BSalidaNorteListener implements ActionListener{
         public void actionPerformed(ActionEvent e){
             lIdAutos.setText("Salida Norte");
+            contadorAutosEntradaySalida.setText(String.valueOf(salidaNorte.getlNumeroDeAutos()));
             NodoD<Auto> cabeza = colaCarros.getFirst();
             aIDAutos.setText("");
             do{
@@ -600,6 +670,7 @@ public class GUI extends JFrame{
     public class BSalidaSurListener implements ActionListener{
         public void actionPerformed(ActionEvent e){
             lIdAutos.setText("Salida Sur");
+            contadorAutosEntradaySalida.setText(String.valueOf(salidaSur.getlNumeroDeAutos()));
             NodoD<Auto> cabeza = colaCarros.getFirst();
             aIDAutos.setText("");
             do{
@@ -616,6 +687,7 @@ public class GUI extends JFrame{
     public class BSalidaEsteListener implements ActionListener{
         public void actionPerformed(ActionEvent e){
             lIdAutos.setText("Salida Este");
+            contadorAutosEntradaySalida.setText(String.valueOf(salidaEste.getlNumeroDeAutos()));
             NodoD<Auto> cabeza = colaCarros.getFirst();
             aIDAutos.setText("");
             do{
@@ -632,6 +704,7 @@ public class GUI extends JFrame{
     public class BSalidaOesteListener implements ActionListener{
         public void actionPerformed(ActionEvent e){
             lIdAutos.setText("Salida Oeste");
+            contadorAutosEntradaySalida.setText(String.valueOf(salidaOeste.getlNumeroDeAutos()));
             NodoD<Auto> cabeza = colaCarros.getFirst();
             aIDAutos.setText("");
             do{
