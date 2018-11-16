@@ -1,4 +1,5 @@
 package com.company;
+import com.sun.org.apache.xalan.internal.xsltc.compiler.util.StringStack;
 import com.sun.scenario.effect.impl.sw.java.JSWBlend_COLOR_BURNPeer;
 import sun.java2d.loops.ProcessPath;
 import sun.management.HotspotClassLoadingMBean;
@@ -7,44 +8,10 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
+import java.rmi.MarshalException;
 import javax.swing.JOptionPane;
 
 public class GUI extends JFrame{
-    //Variables generales de la app
-    private JPanel pContenedor, pDatos, pMapa, pAppUsuario, pBotones;
-    private JButton bAvanzarUnaHora, bAvanzar30Min, bAvanzar15min, bAvanzar5min;
-    private JLabel lNumAutos, lAutosEntrada, lAutosSalida, lAutosActuales, lHora, lDia;
-    private JTextField fNumeroAutos, fAutosEntrada, fAutosSalida, fAutosActuales, fHora, fDia;
-
-    //Variables appUsuario
-    private JPanel panelBusqueda, panelId;
-    private JLabel lBuscarAutos, lIdAutos;
-    private JButton bBuscarID;
-    private JTextField fIDAutos;
-    private JTextArea aIDAutos, aIDEncontrado;
-    private JScrollPane scroll;
-
-    //variables AppGeneral
-    private JPanel pContenedorApp, pBotonesApp, pEntrada, pSalida;
-    private JButton bRegistroEntrada, bRegistroSalida, bPanelBuscar, bBaseDeDatos;
-    private JButton bEntradaNorte, bEntradaSur, bEntradaEste, bEntradaOeste;
-    private JButton bRegresar;
-    private JButton bSalidaNorte, bSalidaSur, bSalidaEste, bSalidaOeste;
-    private JLabel lNorte, lSur, lEste, lOeste, lOpciones;
-
-    //Variables panel contador de carros  entrada
-    private JPanel panelContador;
-    private JTextField contadorAutosEntradaySalida;
-
-    //Variables NuevosPaneles
-    private JPanel pBaseDatos, pDatosApp;
-    private JTextField hMayorEntrada, hMayorSalida, aEntradaMasOcupada, aSalidaMasOcupada;
-    //TODO Agregar funcionalida a los JTextFields que estan aquí arriba
-    //TODO ir a cenar porque tengo hambre
-
-    //Variables botonesRegresar
-    private JButton bRegresarRegistroN, bRegresarRegistroS;
-
     //Variables Funcionamiento
     private Hora reloj;
     private Calendario fecha;
@@ -57,6 +24,11 @@ public class GUI extends JFrame{
     protected Calendario fechaMasEntradas, fechaMasSalidas;
     protected long lAutosAcumulados, lAutosAnteriores = 0, lAutosMaximos = 0;
     protected long lAutosSalidaA, lAutosSalidasAnteriores = 0, lAutosSalidasMaxima = 0;
+    private boolean crear = true;
+
+    //Variables para la hashTable de Coches
+    private final int MAX_SIZE = 4;
+    private SingleLinkedList<Auto> tablaHash[];
 
     //Definir arreglos
     //Entrada
@@ -87,6 +59,9 @@ public class GUI extends JFrame{
         sOeste = new DoubleLinkedList<Auto>();
         hMasEntradas = new Hora();
         hMasSalidas = new Hora();
+        tablaHash = new SingleLinkedList[MAX_SIZE];
+        for(int i=0; i<MAX_SIZE; i++)
+            tablaHash[i] = new SingleLinkedList<Auto>();
         llenarArreglos();
         initComponents();
     }
@@ -98,13 +73,29 @@ public class GUI extends JFrame{
         pDatos = new JPanel();
         pMapa = new JPanel();
         pAppUsuario = new JPanel();
+        panelControlTiempo = new JPanel();
+        pContenedorTiempoYEspecial = new JPanel();
+        pCrearCarroEspecial = new JPanel();
+        pSeleccion = new JPanel();
         pBotones = new JPanel();
         //Variables botones
-        bAvanzarUnaHora = new JButton("Avanzar una hora");
-        bAvanzar30Min = new JButton("Avanzar treinta minutos");
-        bAvanzar15min = new JButton("Avanzar quince minutos");
-        bAvanzar5min = new JButton("Avanzar 5 minutos");
+        bAgregarCarros = new JButton("Agregar Carros");
+        bCrearCarroEspecial = new JButton("Crear Carro Especial");
+        bSeleccionarEntrada = new JButton("Seleccionar Entrada");
+        bSeleccionarSalida = new JButton("Seleccionar Salida");
+        bRegresarCarroEspecial = new JButton("Regreasr");
+        bCrear = new JButton("Crear");
+        bAvanzarUnaHora = new JButton("+ 1:00");
+        bAvanzar30Min = new JButton("+ 00:30");
+        bAvanzar15min = new JButton("+ 00:15");
+        bAvanzar5min = new JButton("+ 00:05");
             //Añadir Funcioanlidad a los botones
+            bAgregarCarros.addActionListener(new BAgregarCarrosListener());
+            bCrearCarroEspecial.addActionListener(new BCrearCarroEspecialListener());
+            bSeleccionarEntrada.addActionListener(new BSeleccionarEntradaListener());
+            bSeleccionarSalida.addActionListener(new BSeleccionarSalidaListener());
+            bRegresarCarroEspecial.addActionListener(new BRegresarCarroEspecial());
+            bCrear.addActionListener(new BCrearListener());
             bAvanzarUnaHora.addActionListener(new BAHoraListener());
             bAvanzar30Min.addActionListener(new BtreintaListener());
             bAvanzar15min.addActionListener(new BQuinceListener());
@@ -140,6 +131,18 @@ public class GUI extends JFrame{
         scroll = new JScrollPane(aIDAutos);
         aIDAutos.setEditable(false);
 
+        //ComboBox
+        jSeleccionarCarros = new JComboBox();
+        jSeleccionarEntrada = new JComboBox();
+        jSeleccionarSalida = new JComboBox();
+
+        jSeleccionarCarros.setModel(new DefaultComboBoxModel(new String[]
+                {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"}));
+        jSeleccionarEntrada.setModel(new DefaultComboBoxModel(new String[]
+                {"-Selecciona Entrada-", "Norte", "Sur", "Este", "Oeste"}));
+        jSeleccionarSalida.setModel(new DefaultComboBoxModel(new String[]
+                {"-Selecciona Salida- ", "Norte", "Sur", "Este", "Oeste"}));
+
         //Inicializacion VariablesNuevosPaneles
         pBaseDatos = new JPanel();
         pBaseDatos.setLayout(new GridLayout(2,1));
@@ -161,25 +164,38 @@ public class GUI extends JFrame{
         pBotonesApp = new JPanel();
         pBotonesApp.setLayout(new GridLayout(5,1));
         pEntrada = new JPanel();
-        pEntrada.setLayout(new GridLayout(5,1));
+        pEntrada.setLayout(new GridLayout(3,1));
+        pEntradaP1 = new JPanel();
+        pEntradaP2 = new JPanel();
+        pEntradaP1.setLayout(new GridLayout(1, 3));
+        pEntradaP2.setLayout(new GridLayout(1,2));
         pSalida = new JPanel();
-        pSalida.setLayout(new GridLayout(5,1));
+        pSalida.setLayout(new GridLayout(3,1));
+        pSalidaP1 = new JPanel();
+        pSalidaP1.setLayout(new GridLayout(1,2));
         //Botones AppGeneral
         bRegistroEntrada = new JButton("Registro Entrada");
         bRegistroSalida = new JButton("Registro Salida");
         bPanelBuscar = new JButton("Buscar ID");
         bBaseDeDatos = new JButton("Base de Datos");
         bRegresar = new JButton("Regresar");
-        bEntradaNorte = new JButton("Norte");
-        bEntradaSur = new JButton("Sur");
-        bEntradaEste = new JButton("Este");
-        bEntradaOeste = new JButton("Oeste");
-        bSalidaNorte = new JButton("Norte");
+        /*bSalidaNorte = new JButton("Norte");
         bSalidaSur = new JButton("Sur");
         bSalidaEste = new JButton("Este");
-        bSalidaOeste = new JButton("Oeste");
+        bSalidaOeste = new JButton("Oeste");*/
         bRegresarRegistroN = new JButton("Regresar");
         bRegresarRegistroS = new JButton("Regresar");
+
+        jSelectEntrada = new JComboBox();
+        jSelectEntrada.setModel(new DefaultComboBoxModel(new String[] {"-Seleccionar Entrada -", " Entrada Norte ",
+                " Entrada Sur ", " Entrada Este ", " Entrada Oeste "}));
+        bBuscarEntrada = new JButton("Buscar");
+
+        jSelectSalida = new JComboBox();
+        jSelectSalida.setModel(new DefaultComboBoxModel(new String[] {"-Seleccionar Salida -", "Salida Norte",
+                "Salida Sur", "Salida Este", "Salida Oeste"}));
+        bBuscarSalida = new JButton("Buscar");
+
         //label AppGeneral
         lNorte = new JLabel("Norte");
         lSur = new JLabel("Sur");
@@ -192,14 +208,8 @@ public class GUI extends JFrame{
         bPanelBuscar.addActionListener(new BPanelBusquedaListener());
         bBaseDeDatos.addActionListener(new BBaseDatosListener());
         bRegresar.addActionListener(new BRegresarListener());
-        bEntradaNorte.addActionListener(new BEntrdaNorteListener());
-        bEntradaSur.addActionListener(new BEntradaSurListener());
-        bEntradaEste.addActionListener(new BEntrdaEsteLsitener());
-        bEntradaOeste.addActionListener(new BEntradaOesteListener());
-        bSalidaNorte.addActionListener(new BSalidaNorteListener());
-        bSalidaSur.addActionListener(new  BSalidaSurListener());
-        bSalidaEste.addActionListener(new BSalidaEsteListener());
-        bSalidaOeste.addActionListener(new BSalidaOesteListener());
+        bBuscarEntrada.addActionListener(new bBuscarListener());
+        bBuscarSalida.addActionListener(new bBuscarSalidaListener());
         bRegresarRegistroN.addActionListener(new BRRegistroNorte());
         bRegresarRegistroS.addActionListener(new BRRegistroSur());
 
@@ -213,7 +223,11 @@ public class GUI extends JFrame{
         pDatos.setLayout(new GridLayout(5,3));
         pMapa.setLayout(new GridLayout(1,1));
         pAppUsuario.setLayout(new GridLayout(2,1));
-        pBotones.setLayout(new GridLayout(4,1));
+        panelControlTiempo.setLayout(new GridLayout(3,1));
+        pContenedorTiempoYEspecial.setLayout(new GridLayout(1,1));
+        pCrearCarroEspecial.setLayout(new GridLayout(3, 2));
+        pSeleccion.setLayout(new GridLayout(2, 2));
+        pBotones.setLayout(new GridLayout(1,4));
 
         //Panel COntador de entrada y salida de autos
         panelContador = new JPanel();
@@ -225,9 +239,6 @@ public class GUI extends JFrame{
         pDatos.add(lNumAutos);
         pDatos.add(new JLabel(""));
         pDatos.add(fNumeroAutos);
-        /*pDatos.add(lAutosEntrada);
-        pDatos.add(new JLabel(""));
-        pDatos.add(fAutosEntrada);*/
         pDatos.add(lAutosSalida);
         pDatos.add(new JLabel(""));
         pDatos.add(fAutosSalida);
@@ -266,17 +277,23 @@ public class GUI extends JFrame{
         pBotonesApp.add(bRegistroEntrada);
         pBotonesApp.add(bRegistroSalida);
 
-        pEntrada.add(bEntradaNorte);
-        pEntrada.add(bEntradaSur);
-        pEntrada.add(bEntradaEste);
-        pEntrada.add(bEntradaOeste);
-        pEntrada.add(bRegresarRegistroN);
+        pEntradaP1.add(new JLabel(""));
+        pEntradaP1.add(new JLabel("Entradas"));
+        pEntradaP1.add(new JLabel(""));
 
-        pSalida.add(bSalidaNorte);
-        pSalida.add(bSalidaSur);
-        pSalida.add(bSalidaEste);
-        pSalida.add(bSalidaOeste);
-        pSalida.add(bRegresarRegistroS);
+        pEntradaP2.add(bRegresarRegistroN);
+        pEntradaP2.add(bBuscarEntrada);
+
+        pEntrada.add(pEntradaP1);
+        pEntrada.add(jSelectEntrada);
+        pEntrada.add(pEntradaP2);
+
+        pSalidaP1.add(bRegresarRegistroS);
+        pSalidaP1.add(bBuscarSalida);
+
+        pSalida.add(new JLabel("Salida"));
+        pSalida.add(jSelectSalida);
+        pSalida.add(pSalidaP1);
 
         pContenedorApp.add(pBotonesApp);
 
@@ -284,6 +301,24 @@ public class GUI extends JFrame{
         pBotones.add(bAvanzar30Min);
         pBotones.add(bAvanzar15min);
         pBotones.add(bAvanzar5min);
+
+        pSeleccion.add(jSeleccionarCarros);
+        pSeleccion.add(new JLabel("# de carros"));
+        pSeleccion.add(bAgregarCarros);
+        pSeleccion.add(bCrearCarroEspecial);
+
+        panelControlTiempo.add(pSeleccion);
+        panelControlTiempo.add(new JLabel("Reloj"));
+        panelControlTiempo.add(pBotones);
+
+        pCrearCarroEspecial.add(jSeleccionarEntrada);
+        pCrearCarroEspecial.add(bSeleccionarEntrada);
+        pCrearCarroEspecial.add(jSeleccionarSalida);
+        pCrearCarroEspecial.add(bSeleccionarSalida);
+        pCrearCarroEspecial.add(bRegresarCarroEspecial);
+        pCrearCarroEspecial.add(bCrear);
+
+        pContenedorTiempoYEspecial.add(panelControlTiempo);
 
         panelContador.add(lIdAutos);
         panelContador.add(new JLabel(""));
@@ -304,7 +339,7 @@ public class GUI extends JFrame{
         pDatosApp.add(aSalidaMasOcupada);
 
         pContenedor.add(pDatos);
-        pContenedor.add(pBotones);
+        pContenedor.add(pContenedorTiempoYEspecial);
         pContenedor.add(pMapa);
         pContenedor.add(pContenedorApp);
         pContenedor.add(pBaseDatos);
@@ -314,13 +349,55 @@ public class GUI extends JFrame{
         add(pContenedor);
     }
 
+    public class BAgregarCarrosListener implements ActionListener{
+        public void actionPerformed(ActionEvent e){
+            int iNumeroCarros = jSeleccionarCarros.getSelectedIndex();
+            crearCarros(iNumeroCarros);
+        }
+    }
+
+    public class BCrearCarroEspecialListener implements ActionListener{
+        public void actionPerformed(ActionEvent e){
+            pContenedorTiempoYEspecial.remove(panelControlTiempo);
+            pContenedorTiempoYEspecial.add(pCrearCarroEspecial);
+            revalidate();
+            repaint();
+        }
+    }
+
+    public class  BSeleccionarEntradaListener implements ActionListener{
+        public void actionPerformed(ActionEvent e){
+
+        }
+    }
+
+    public class  BSeleccionarSalidaListener implements ActionListener{
+        public void actionPerformed(ActionEvent e){
+
+        }
+    }
+
+    public class  BRegresarCarroEspecial implements ActionListener{
+        public void actionPerformed(ActionEvent e){
+            pContenedorTiempoYEspecial.remove(pCrearCarroEspecial);
+            pContenedorTiempoYEspecial.add(panelControlTiempo);
+            revalidate();
+            repaint();
+        }
+    }
+
+    public class  BCrearListener implements ActionListener{
+        public void actionPerformed(ActionEvent e){
+
+        }
+    }
+
     public class BAHoraListener implements ActionListener{
         public void actionPerformed(ActionEvent e){
+            crear = true;
             reloj.setHora(reloj.getHora()+1);
             verificarTiempo();
-            int nRandom = (int)(Math.random()*59);
             salidaCarros();
-            crearCarros(nRandom);
             autosCirculando();
             setEntradaySalidaMasOcupada();
             if(reloj.getMinutos() == 0){
@@ -331,11 +408,10 @@ public class GUI extends JFrame{
 
     public class BtreintaListener implements ActionListener{
         public void actionPerformed(ActionEvent e){
+            crear = true;
             reloj.setMinutos(reloj.getMinutos()+30);
             verificarTiempo();
-            int nRandom = (int)(Math.random()*30);
             salidaCarros();
-            crearCarros(nRandom);
             autosCirculando();
             setEntradaySalidaMasOcupada();
             if(reloj.getMinutos() == 0){
@@ -346,11 +422,10 @@ public class GUI extends JFrame{
 
     public class BQuinceListener implements ActionListener{
         public void actionPerformed(ActionEvent e){
+            crear = true;
             reloj.setMinutos(reloj.getMinutos()+15);
             verificarTiempo();
-            int nRandom = (int)(Math.random()*15);
             salidaCarros();
-            crearCarros(nRandom);
             autosCirculando();
             setEntradaySalidaMasOcupada();
             if(reloj.getMinutos() == 0){
@@ -361,11 +436,10 @@ public class GUI extends JFrame{
 
     public class BCincoListener implements ActionListener{
         public void actionPerformed(ActionEvent e){
+            crear = true;
             reloj.setMinutos(reloj.getMinutos()+5);
             verificarTiempo();
-            int nRandom = (int)(Math.random()*5);
             salidaCarros();
-            crearCarros(nRandom);
             autosCirculando();
             setEntradaySalidaMasOcupada();
             if(reloj.getMinutos() == 0){
@@ -392,57 +466,49 @@ public class GUI extends JFrame{
     }
 
     public void VerificarHoraConMasSalidasYEntradas(){
-        lAutosAcumulados = colaCarros.getSize() - lAutosAnteriores;
-        lAutosAnteriores = colaCarros.getSize();
-        if(lAutosAcumulados >= lAutosMaximos){
-            lAutosMaximos = lAutosAcumulados;
-            hMayorEntrada.setText(reloj.toString());
-        }
+        if(colaCarros.getFirst() != null){
+            lAutosAcumulados = colaCarros.getSize() - lAutosAnteriores;
+            lAutosAnteriores = colaCarros.getSize();
+            if(lAutosAcumulados >= lAutosMaximos){
+                lAutosMaximos = lAutosAcumulados;
+                hMayorEntrada.setText(reloj.toString());
+            }
 
-        lAutosSalidaA = carrosSalieron - lAutosSalidasAnteriores;
-        lAutosSalidasAnteriores = carrosSalieron;
-        if(lAutosSalidaA >= lAutosSalidasMaxima){
-            lAutosSalidasMaxima = lAutosSalidaA;
-            hMayorSalida.setText(reloj.toString());
+            lAutosSalidaA = carrosSalieron - lAutosSalidasAnteriores;
+            lAutosSalidasAnteriores = carrosSalieron;
+            if(lAutosSalidaA >= lAutosSalidasMaxima){
+                lAutosSalidasMaxima = lAutosSalidaA;
+                hMayorSalida.setText(reloj.toString());
+            }
         }
     }
 
     public void crearCarros(int nRandom){
-        Hora horaSalida = new Hora();
-        Calendario fechaSalida = new Calendario(0,0,0);
-        int h = reloj.getHora();
-        int m = reloj.getMinutos();
-        Hora horaEntrada = new Hora(h, m);
-        for(int i=0; i<nRandom; i++){
-            int entradaRandom = (int)(Math.random()*4);
-            Auto a = new Auto(id, horaEntrada, fecha, true, arregloEntrada[entradaRandom].getNombre(), horaSalida,
+        if(crear){
+            Hora horaSalida = new Hora();
+            Calendario fechaSalida = new Calendario(0,0,0);
+            int h = reloj.getHora();
+            int m = reloj.getMinutos();
+            Hora horaEntrada = new Hora(h, m);
+            for(int i=0; i<nRandom; i++){
+                int entradaRandom = (int)(Math.random()*MAX_SIZE);
+                Auto a = new Auto(id, horaEntrada, fecha, true, arregloEntrada[entradaRandom].getNombre(), horaSalida,
                         fechaSalida, "");
-            NodoD<Auto> nNodoD = new NodoD<Auto>(a, null, null);
-            switch (entradaRandom){
-                case 0:
-                    eNorte.addFirst(nNodoD);
-                    entradaNorte.setlNumeroDeAutos(entradaNorte.getlNumeroDeAutos() + 1);
-                    break;
-                case 1:
-                    eSur.addFirst(nNodoD);
-                    entradaSur.setlNumeroDeAutos(entradaSur.getlNumeroDeAutos() + 1);
-                    break;
-                case 2:
-                    eEste.addFirst(nNodoD);
-                    entradaEste.setlNumeroDeAutos(entradaEste.getlNumeroDeAutos() + 1);
-                    break;
-                case 3:
-                    eOeste.addFirst(nNodoD);
-                    entradaOeste.setlNumeroDeAutos(entradaOeste.getlNumeroDeAutos() + 1);
-                    break;
+                NodoD<Auto> nNodoD = new NodoD<Auto>(a, null, null);
+            Nodo<Auto> nNodo = new Nodo<Auto>(a, null);
+            tablaHash[entradaRandom].addFirst(nNodo);
+            arregloEntrada[entradaRandom].setlNumeroDeAutos(arregloEntrada[entradaRandom].getlNumeroDeAutos() + 1);
+                colaCarros.add(nNodoD);
+                id++;
             }
-            colaCarros.add(nNodoD);
-            id++;
+            fNumeroAutos.setText(String.valueOf(id-1));
         }
-        fNumeroAutos.setText(String.valueOf(id-1));
+        crear = false;
+
     }
 
     public void salidaCarros(){
+        //TODO remover el numero random por el peso de las aristas
         NodoD<Auto> head = colaCarros.getFirst();
         if(head != null){
             for(int i=0; i<colaCarros.getSize(); i++){
@@ -505,21 +571,22 @@ public class GUI extends JFrame{
     }
 
     public void setEntradaySalidaMasOcupada(){
-        Entrada max = arregloEntrada[0];
-        for(int i=1; i<arregloEntrada.length-1; i++){
-            if(max.getlNumeroDeAutos() < arregloEntrada[i].getlNumeroDeAutos()){
-                max = arregloEntrada[i];
+        if(colaCarros.getFirst() != null){
+            Entrada max = arregloEntrada[0];
+            for(int i=1; i<arregloEntrada.length-1; i++){
+                if(max.getlNumeroDeAutos() < arregloEntrada[i].getlNumeroDeAutos()){
+                    max = arregloEntrada[i];
+                }
             }
-        }
-        aEntradaMasOcupada.setText(max.getNombre());
-        Salida sMax = arregloSalida[0];
-        for(int i=1; i<arregloSalida.length-1; i++){
-            if(max.getlNumeroDeAutos() < arregloSalida[i].getlNumeroDeAutos()){
-                sMax = arregloSalida[i];
+            aEntradaMasOcupada.setText(max.getNombre());
+            Salida sMax = arregloSalida[0];
+            for(int i=1; i<arregloSalida.length-1; i++){
+                if(max.getlNumeroDeAutos() < arregloSalida[i].getlNumeroDeAutos()){
+                    sMax = arregloSalida[i];
+                }
             }
+            aSalidaMasOcupada.setText(sMax.getNombre());
         }
-        aSalidaMasOcupada.setText(sMax.getNombre());
-
     }
 
     public class BRegistroEntradaListener implements ActionListener{
@@ -581,148 +648,184 @@ public class GUI extends JFrame{
         }
     }
     //TODO repartir en diferentes LinkedList las entradas y salidas
-    public class BEntrdaNorteListener implements ActionListener{
+
+    public class bBuscarListener implements ActionListener{
         public void actionPerformed(ActionEvent e){
-            lIdAutos.setText("Entrada Norte");
-            contadorAutosEntradaySalida.setText(String.valueOf(entradaNorte.getlNumeroDeAutos()));
+            int iEntrada =  jSelectEntrada.getSelectedIndex();
             NodoD<Auto> cabeza = colaCarros.getFirst();
-            contadorAutosEntradaySalida.setText(String.valueOf(eNorte.getSize()));
-            aIDAutos.setText("");
-            do{
-                if(cabeza.getElement().getEntra().equals("Norte")){
-                    aIDAutos.setText(aIDAutos.getText() + cabeza.getElement().toString());
-                }
-                cabeza = cabeza.getNext();
-            }while(cabeza != colaCarros.getLast());
-            if(cabeza.getElement().getEntra().equals("Norte")){
-                aIDAutos.setText(aIDAutos.getText() + colaCarros.getLast().getElement().toString());
+            switch (iEntrada){
+                case 1:
+                    lIdAutos.setText("Entrada Norte");
+                    contadorAutosEntradaySalida.setText(String.valueOf(entradaNorte.getlNumeroDeAutos()));
+                    aIDAutos.setText("");
+                    do{
+                        if(cabeza.getElement().getEntra().equals("Norte")){
+                            aIDAutos.setText(aIDAutos.getText() + cabeza.getElement().toString());
+                        }
+                        cabeza = cabeza.getNext();
+                    }while(cabeza != colaCarros.getLast());
+                    if(cabeza.getElement().getEntra().equals("Norte")){
+                        aIDAutos.setText(aIDAutos.getText() + colaCarros.getLast().getElement().toString());
+                    }
+                    break;
+                case 2:
+                    lIdAutos.setText("Entrada Sur");
+                    contadorAutosEntradaySalida.setText(String.valueOf(entradaSur.getlNumeroDeAutos()));
+                    aIDAutos.setText("");
+                    do{
+                        if(cabeza.getElement().getEntra().equals("Sur")){
+                            aIDAutos.setText(aIDAutos.getText() + cabeza.getElement().toString());
+                        }
+                        cabeza = cabeza.getNext();
+                    }while(cabeza != colaCarros.getLast());
+                    if(cabeza.getElement().getEntra().equals("Sur")){
+                        aIDAutos.setText(aIDAutos.getText() + colaCarros.getLast().getElement().toString());
+                    }
+                    break;
+                case 3:
+                    lIdAutos.setText("Entrada Este");
+                    contadorAutosEntradaySalida.setText(String.valueOf(entradaEste.getlNumeroDeAutos()));
+                    aIDAutos.setText("");
+                    do{
+                        if(cabeza.getElement().getEntra().equals("Este")){
+                            aIDAutos.setText(aIDAutos.getText() + cabeza.getElement().toString());
+                        }
+                        cabeza = cabeza.getNext();
+                    }while(cabeza != colaCarros.getLast());
+                    if(cabeza.getElement().getEntra().equals("Este")){
+                        aIDAutos.setText(aIDAutos.getText() + colaCarros.getLast().getElement().toString());
+                    }
+                    break;
+                case 4:
+                    lIdAutos.setText("Entrada Oeste");
+                    contadorAutosEntradaySalida.setText(String.valueOf(entradaOeste.getlNumeroDeAutos()));
+                    aIDAutos.setText("");
+                    do{
+                        if(cabeza.getElement().getEntra().equals("Oeste")){
+                            aIDAutos.setText(aIDAutos.getText() + cabeza.getElement().toString());
+                        }
+                        cabeza = cabeza.getNext();
+                    }while(cabeza != colaCarros.getLast());
+                    if(cabeza.getElement().getEntra().equals("Oeste")){
+                        aIDAutos.setText(aIDAutos.getText() + colaCarros.getLast().getElement().toString());
+                    }
+                    break;
             }
         }
     }
-    public class BEntradaSurListener implements ActionListener{
+
+    public class bBuscarSalidaListener implements ActionListener{
         public void actionPerformed(ActionEvent e){
-            lIdAutos.setText("Entrada Sur");
-            contadorAutosEntradaySalida.setText(String.valueOf(entradaSur.getlNumeroDeAutos()));
+            int iSalida =  jSelectSalida.getSelectedIndex();
             NodoD<Auto> cabeza = colaCarros.getFirst();
-            aIDAutos.setText("");
-            do{
-                if(cabeza.getElement().getEntra().equals("Sur")){
-                    aIDAutos.setText(aIDAutos.getText() + cabeza.getElement().toString());
-                }
-                cabeza = cabeza.getNext();
-            }while(cabeza != colaCarros.getLast());
-            if(cabeza.getElement().getEntra().equals("Sur")){
-                aIDAutos.setText(aIDAutos.getText() + colaCarros.getLast().getElement().toString());
+            switch (iSalida){
+                case 1:
+                    lIdAutos.setText("Salida Norte");
+                    contadorAutosEntradaySalida.setText(String.valueOf(salidaNorte.getlNumeroDeAutos()));
+                    aIDAutos.setText("");
+                    do{
+                        if(cabeza.getElement().getSale().equals("Norte")){
+                            aIDAutos.setText(aIDAutos.getText() + cabeza.getElement().toString());
+                        }
+                        cabeza = cabeza.getNext();
+                    }while(cabeza != colaCarros.getLast());
+                    if(cabeza.getElement().getSale().equals("Norte")){
+                        aIDAutos.setText(aIDAutos.getText() + colaCarros.getLast().getElement().toString());
+                    }
+                    break;
+                case 2:
+                    lIdAutos.setText("Salida Sur");
+                    contadorAutosEntradaySalida.setText(String.valueOf(salidaSur.getlNumeroDeAutos()));
+                    aIDAutos.setText("");
+                    do{
+                        if(cabeza.getElement().getSale().equals("Sur")){
+                            aIDAutos.setText(aIDAutos.getText() + cabeza.getElement().toString());
+                        }
+                        cabeza = cabeza.getNext();
+                    }while(cabeza != colaCarros.getLast());
+                    if(cabeza.getElement().getSale().equals("Sur")){
+                        aIDAutos.setText(aIDAutos.getText() + colaCarros.getLast().getElement().toString());
+                    }
+                    break;
+                case 3:
+                    lIdAutos.setText("Salida Este");
+                    contadorAutosEntradaySalida.setText(String.valueOf(salidaEste.getlNumeroDeAutos()));
+                    aIDAutos.setText("");
+                    do{
+                        if(cabeza.getElement().getSale().equals("Este")){
+                            aIDAutos.setText(aIDAutos.getText() + cabeza.getElement().toString());
+                        }
+                        cabeza = cabeza.getNext();
+                    }while(cabeza != colaCarros.getLast());
+                    if(cabeza.getElement().getSale().equals("Este")){
+                        aIDAutos.setText(aIDAutos.getText() + colaCarros.getLast().getElement().toString());
+                    }
+                    break;
+                case 4:
+                    lIdAutos.setText("Salida Oeste");
+                    contadorAutosEntradaySalida.setText(String.valueOf(salidaOeste.getlNumeroDeAutos()));
+                    aIDAutos.setText("");
+                    do{
+                        if(cabeza.getElement().getSale().equals("Oeste")){
+                            aIDAutos.setText(aIDAutos.getText() + cabeza.getElement().toString());
+                        }
+                        cabeza = cabeza.getNext();
+                    }while(cabeza != colaCarros.getLast());
+                    if(cabeza.getElement().getSale().equals("Oeste")){
+                        aIDAutos.setText(aIDAutos.getText() + colaCarros.getLast().getElement().toString());
+                    }
+                    break;
             }
         }
     }
-    public class BEntrdaEsteLsitener implements ActionListener{
-        public void actionPerformed(ActionEvent e){
-            lIdAutos.setText("Entrada Este");
-            contadorAutosEntradaySalida.setText(String.valueOf(entradaEste.getlNumeroDeAutos()));
-            NodoD<Auto> cabeza = colaCarros.getFirst();
-            aIDAutos.setText("");
-            do{
-                if(cabeza.getElement().getEntra().equals("Este")){
-                    aIDAutos.setText(aIDAutos.getText() + cabeza.getElement().toString());
-                }
-                cabeza = cabeza.getNext();
-            }while(cabeza != colaCarros.getLast());
-            if(cabeza.getElement().getEntra().equals("Este")){
-                aIDAutos.setText(aIDAutos.getText() + colaCarros.getLast().getElement().toString());
-            }
-        }
-    }
-    public class BEntradaOesteListener implements ActionListener{
-        public void actionPerformed(ActionEvent e){
-            lIdAutos.setText("Entrada Oeste");
-            contadorAutosEntradaySalida.setText(String.valueOf(entradaOeste.getlNumeroDeAutos()));
-            NodoD<Auto> cabeza = colaCarros.getFirst();
-            aIDAutos.setText("");
-            do{
-                if(cabeza.getElement().getEntra().equals("Oeste")){
-                    aIDAutos.setText(aIDAutos.getText() + cabeza.getElement().toString());
-                }
-                cabeza = cabeza.getNext();
-            }while(cabeza != colaCarros.getLast());
-            if(cabeza.getElement().getEntra().equals("Oeste")){
-                aIDAutos.setText(aIDAutos.getText() + colaCarros.getLast().getElement().toString());
-            }
-        }
-    }
-    public class BSalidaNorteListener implements ActionListener{
-        public void actionPerformed(ActionEvent e){
-            lIdAutos.setText("Salida Norte");
-            contadorAutosEntradaySalida.setText(String.valueOf(salidaNorte.getlNumeroDeAutos()));
-            NodoD<Auto> cabeza = colaCarros.getFirst();
-            aIDAutos.setText("");
-            do{
-                if(cabeza.getElement().getSale().equals("Norte")){
-                    aIDAutos.setText(aIDAutos.getText() + cabeza.getElement().toString());
-                }
-                cabeza = cabeza.getNext();
-            }while(cabeza != colaCarros.getLast());
-            if(cabeza.getElement().getSale().equals("Norte")){
-                aIDAutos.setText(aIDAutos.getText() + colaCarros.getLast().getElement().toString());
-            }
-        }
-    }
-    public class BSalidaSurListener implements ActionListener{
-        public void actionPerformed(ActionEvent e){
-            lIdAutos.setText("Salida Sur");
-            contadorAutosEntradaySalida.setText(String.valueOf(salidaSur.getlNumeroDeAutos()));
-            NodoD<Auto> cabeza = colaCarros.getFirst();
-            aIDAutos.setText("");
-            do{
-                if(cabeza.getElement().getSale().equals("Sur")){
-                    aIDAutos.setText(aIDAutos.getText() + cabeza.getElement().toString());
-                }
-                cabeza = cabeza.getNext();
-            }while(cabeza != colaCarros.getLast());
-            if(cabeza.getElement().getSale().equals("Sur")){
-                aIDAutos.setText(aIDAutos.getText() + colaCarros.getLast().getElement().toString());
-            }
-        }
-    }
-    public class BSalidaEsteListener implements ActionListener{
-        public void actionPerformed(ActionEvent e){
-            lIdAutos.setText("Salida Este");
-            contadorAutosEntradaySalida.setText(String.valueOf(salidaEste.getlNumeroDeAutos()));
-            NodoD<Auto> cabeza = colaCarros.getFirst();
-            aIDAutos.setText("");
-            do{
-                if(cabeza.getElement().getSale().equals("Este")){
-                    aIDAutos.setText(aIDAutos.getText() + cabeza.getElement().toString());
-                }
-                cabeza = cabeza.getNext();
-            }while(cabeza != colaCarros.getLast());
-            if(cabeza.getElement().getSale().equals("Este")){
-                aIDAutos.setText(aIDAutos.getText() + colaCarros.getLast().getElement().toString());
-            }
-        }
-    }
-    public class BSalidaOesteListener implements ActionListener{
-        public void actionPerformed(ActionEvent e){
-            lIdAutos.setText("Salida Oeste");
-            contadorAutosEntradaySalida.setText(String.valueOf(salidaOeste.getlNumeroDeAutos()));
-            NodoD<Auto> cabeza = colaCarros.getFirst();
-            aIDAutos.setText("");
-            do{
-                if(cabeza.getElement().getSale().equals("Oeste")){
-                    aIDAutos.setText(aIDAutos.getText() + cabeza.getElement().toString());
-                }
-                cabeza = cabeza.getNext();
-            }while(cabeza != colaCarros.getLast());
-            if(cabeza.getElement().getSale().equals("Oeste")){
-                aIDAutos.setText(aIDAutos.getText() + colaCarros.getLast().getElement().toString());
-            }
-        }
-    }
+
     public class BBuscarIdListener implements ActionListener{
         public void actionPerformed(ActionEvent e){
 
         }
     }
 
+    //Variables generales de la app
+    private JPanel pContenedor, pDatos, pMapa, pAppUsuario, pBotones;
+    private JButton bAvanzarUnaHora, bAvanzar30Min, bAvanzar15min, bAvanzar5min;
+    private JLabel lNumAutos, lAutosEntrada, lAutosSalida, lAutosActuales, lHora, lDia;
+    private JTextField fNumeroAutos, fAutosEntrada, fAutosSalida, fAutosActuales, fHora, fDia;
+
+    //Variables para controlar el tiempo
+    private JPanel panelControlTiempo, pSeleccion, pContenedorTiempoYEspecial, pCrearCarroEspecial;
+    private JComboBox jSeleccionarCarros, jSeleccionarEntrada, jSeleccionarSalida;
+    private JButton bAgregarCarros, bCrearCarroEspecial, bSeleccionarSalida, bSeleccionarEntrada;
+    private JButton bRegresarCarroEspecial, bCrear;
+
+    //Variables appUsuario
+    private JPanel panelBusqueda, panelId;
+    private JLabel lBuscarAutos, lIdAutos;
+    private JButton bBuscarID;
+    private JTextField fIDAutos;
+    private JTextArea aIDAutos, aIDEncontrado;
+    private JScrollPane scroll;
+
+    //variables AppGeneral
+    private JPanel pContenedorApp, pBotonesApp, pEntrada, pSalida;
+    private JPanel pEntradaP1, pEntradaP2;
+    private JPanel pSalidaP1;
+    private JButton bRegistroEntrada, bRegistroSalida, bPanelBuscar, bBaseDeDatos;
+    private JComboBox jSelectEntrada, jSelectSalida;
+    private JButton bRegresar, bBuscarEntrada, bBuscarSalida;
+    /*private JButton bSalidaNorte, bSalidaSur, bSalidaEste, bSalidaOeste;*/
+    private JLabel lNorte, lSur, lEste, lOeste, lOpciones;
+
+    //Variables panel contador de carros  entrada
+    private JPanel panelContador;
+    private JTextField contadorAutosEntradaySalida;
+
+    //Variables NuevosPaneles
+    private JPanel pBaseDatos, pDatosApp;
+    private JTextField hMayorEntrada, hMayorSalida, aEntradaMasOcupada, aSalidaMasOcupada;
+    //TODO Agregar funcionalida a los JTextFields que estan aquí arriba
+    //TODO ir a cenar porque tengo hambre
+
+    //Variables botonesRegresar
+    private JButton bRegresarRegistroN, bRegresarRegistroS;
 
 }
