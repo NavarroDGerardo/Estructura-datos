@@ -1,6 +1,6 @@
 package com.company;
 
-public class Hora {
+public class Hora implements Comparar<Hora>{
     private int hora, minutos;
 
     public Hora(){
@@ -33,5 +33,45 @@ public class Hora {
     @Override
     public String toString(){
         return String.valueOf(hora) + ":" + String.valueOf(minutos);
+    }
+
+    @Override
+    public boolean esMayor(Hora review){
+        int min = review.getMinutos();
+        int ho = review.getHora();
+        if(this.hora > ho){
+            return true;
+        }else{
+            if(this.minutos > min){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean esIgual(Hora review) {
+        int min = review.getMinutos();
+        int ho = review.getHora();
+        if(this.hora == ho && this.minutos == min){
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
+
+    @Override
+    public boolean esMenor(Hora review) {
+        int min = review.getMinutos();
+        int ho = review.getHora();
+        if(this.hora < ho){
+            return true;
+        }else{
+            if(this.minutos < min){
+                return true;
+            }
+        }
+        return false;
     }
 }

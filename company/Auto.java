@@ -1,4 +1,7 @@
 package com.company;
+
+import java.util.Calendar;
+
 public class Auto {
     protected long id;
     protected Hora horaEntrada, horaSalida;
@@ -7,8 +10,14 @@ public class Auto {
     protected String entra;
     protected String sale;
 
+    protected Hora horaAuxiliar;
+    protected Calendario fechaAuxiliar;
+    protected String sAuxiliar;
+    private float velocidad, distancia;
+
     public Auto(long id, Hora horaEntrada, Calendario fechaEntrada, boolean dentro, String entra,
-                Hora horaSalida, Calendario fechaSalida, String sale){
+                Hora horaSalida, Calendario fechaSalida, String sale, Hora horaAuxiliar, Calendario fechaAuxiliar,
+                String sAuxiliar, float velocidad, float distancia){
         this.horaEntrada = horaEntrada;
         this.id = id;
         this.fechaEntrada = fechaEntrada;
@@ -17,6 +26,11 @@ public class Auto {
         this.horaSalida = horaSalida;
         this.fechaSalida = fechaSalida;
         this.sale = sale;
+        this.horaAuxiliar = horaAuxiliar;
+        this.fechaAuxiliar = fechaAuxiliar;
+        this.sAuxiliar = sAuxiliar;
+        this.velocidad = velocidad;
+        this.distancia = distancia;
     }
 
     public long getId() {
@@ -100,12 +114,54 @@ public class Auto {
         return duracion;
     }
 
+    public Hora getHoraAuxiliar() {
+        return horaAuxiliar;
+    }
+
+    public void setHoraAuxiliar(Hora horaAuxiliar) {
+        this.horaAuxiliar = horaAuxiliar;
+    }
+
+    public Calendario getFechaAuxiliar() {
+        return fechaAuxiliar;
+    }
+
+    public void setFechaAuxiliar(Calendario fechaAuxiliar) {
+        this.fechaAuxiliar = fechaAuxiliar;
+    }
+
+    public String getsAuxiliar() {
+        return sAuxiliar;
+    }
+
+    public void setsAuxiliar(String sAuxiliar) {
+        this.sAuxiliar = sAuxiliar;
+    }
+
     @Override
     public String toString(){
         return "ID: " + String.valueOf(id)
                 + "\n" + "Hora de Entrada: " + horaEntrada.toString() + " Fecha de Entrada: " + fechaEntrada.toString()
                 + "\n" + "Hora de salida: " + horaSalida.toString() + " Fecha de salida: " + fechaSalida.toString()
                 + "\n" + "Entrada: " + entra + "\n" + "Salida: " + sale
-                + "\n" + "Duracion recorrido: " + duracionRecorrido().toString() + "\n\n";
+                + "\n" + "Duracion recorrido: " + duracionRecorrido().toString()
+                + "\n"+ "Velocidad del carro: "+ velocidad + "km/h"
+                + "\n" + "Distancia: " + distancia + "km" + "\n\n";
+    }
+
+    public float getVelocidad() {
+        return velocidad;
+    }
+
+    public void setVelocidad(float velocidad) {
+        this.velocidad = velocidad;
+    }
+
+    public float getDistancia() {
+        return distancia;
+    }
+
+    public void setDistancia(float distancia) {
+        this.distancia = distancia;
     }
 }
