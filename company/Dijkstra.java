@@ -29,4 +29,8 @@ public class Dijkstra {
             }
         }
     }
+
+    public int[][] getCost(){
+        return cost;
+    }
 }

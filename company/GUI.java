@@ -36,6 +36,9 @@ public class GUI extends JFrame{
     private Dijkstra mapa = new Dijkstra();
     private int nodes, source;
 
+    //Variables BFS
+    private int matriz[][] = new int[25][25];
+
     //Salida
     Salida salidaNorte = new Salida("Norte", 0);
     Salida salidaSur = new Salida("Sur", 0);
@@ -58,6 +61,7 @@ public class GUI extends JFrame{
             tablaHashSalida[i] = new SingleLinkedList<Auto>();
         /*vertice = new SingleLinkedList<String>();*/
         crearGrafo();
+        crearGrafoBFSyDFS();
         initComponents();
     }
 
@@ -391,7 +395,13 @@ public class GUI extends JFrame{
 
     public class  BCrearListener implements ActionListener{
         public void actionPerformed(ActionEvent e){
+            source = 5;
+            BFS bfs = new BFS();
+            bfs.bfs(matriz, source);
 
+            System.out.println("\n");
+            DFS dfs = new DFS();
+            dfs.dfs(matriz, source);
         }
     }
 
@@ -590,20 +600,32 @@ public class GUI extends JFrame{
         NodoD<Auto> head = colaCarros.getFirst();
         if(head != null){
             for(int i=0; i<colaCarros.getSize(); i++){
-                if(head.getElement().getHoraAuxiliar().esMenor(reloj)
-                ||  head.getElement().getHoraAuxiliar().esIgual(reloj)){
+                if(head.getElement().getHoraAuxiliar().esMenor(reloj) || head.getElement().getHoraAuxiliar().esIgual(reloj)){
                     if(head.getElement().isDentro()){
-                        Nodo<Auto> n = new Nodo<Auto>(head.getElement(), null);
-                        int p = registarEnTablaSalida(head.getElement().getSale());
-                        tablaHashSalida[p].addLast(n);
                         head.getElement().setDentro(false);
+                        Nodo<Auto> n = new Nodo<Auto>(head.getElement(), null);
+                        int p = registarEnTablaSalida(head.getElement().getsAuxiliar());
+                        tablaHashSalida[p-1].addLast(n);
                         registrarSalida(head);
                         carrosSalieron++;
+
+                        /*for(int ndx=0; ndx<MAX_SIZE; ndx++){
+                            System.out.println("\n*** BUCKET #" + getEntradaoSalida(ndx+1) + "\n");
+                            if(tablaHashSalida[ndx].getSize() > 0){
+                                Nodo<Auto> tempNodo = tablaHashSalida[ndx].getFirst();
+                                while (tempNodo != null){
+                                    System.out.println(tempNodo.getElement().toString() + "\n");
+                                    tempNodo = tempNodo.getNext();
+                                }
+                            }else System.out.println("**** Esta Vacio\n");
+                        }*/
+
                     }
                 }
                 head = head.getNext();
             }
         }
+
         fAutosSalida.setText(String.valueOf(carrosSalieron));
     }
 
@@ -869,6 +891,21 @@ public class GUI extends JFrame{
         mapa.cost[21][21] = 0;
     }
 
+    public void crearGrafoBFSyDFS(){
+        int[][] m = mapa.getCost();
+        for(int i=0; i<=MAX_SIZE; i++){
+            for(int j=0; j<=MAX_SIZE; j++){
+                if(m[i][j] < 99999 && m[i][j] != 0){
+                    matriz[i][j] = 1;
+                }else if(m[i][j] == 0){
+                    matriz[i][j] = 0;
+                }else{
+                    matriz[i][j] = 0;
+                }
+            }
+        }
+    }
+
     public String getEntradaoSalida(int nRamdom){
         String nombre = "";
         if(nRamdom == 1){
@@ -1042,17 +1079,24 @@ public class GUI extends JFrame{
     public class bBuscarSalidaListener implements ActionListener{
         public void actionPerformed(ActionEvent e){
             int iSalida =  jSelectSalida.getSelectedIndex();
-            lIdAutos.setText("Salida: " + getEntradaoSalida(iSalida));
-            if(iSalida > 15){
-                iSalida += 1;
+            int salida = iSalida;
+            if(iSalida > 7){
+                salida = iSalida + 1;
+            }else if(iSalida > 14){
+                salida = iSalida + 2;
             }
-            contadorAutosEntradaySalida.setText(String.valueOf(tablaHash[iSalida].getSize()));
-            if(tablaHash[iSalida].getSize() > 0){
+            lIdAutos.setText("Salida: " + getEntradaoSalida(salida));
+            contadorAutosEntradaySalida.setText(String.valueOf(tablaHashSalida[salida-1].getSize()));
+            if(tablaHashSalida[salida-1].getSize() > 0){
                 aIDAutos.setText("");
-                Nodo<Auto> tempNodo = tablaHash[iSalida].getFirst();
-                while(tempNodo != null){
-                    aIDAutos.setText(tempNodo.getElement().toString() + "\n");
-                    tempNodo = tempNodo.getNext();
+                Nodo<Auto> tempNodo = tablaHashSalida[salida-1].getFirst();
+                while (tempNodo != null){
+                    if(tempNodo.getElement().getSale().equals("")){
+
+                    }else{
+                        aIDAutos.setText(tempNodo.getElement().toString() + "\n");
+                        tempNodo = tempNodo.getNext();
+                    }
                 }
             }else{
                 aIDAutos.setText("Vacio");
